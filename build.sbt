@@ -1,4 +1,4 @@
-name := "Spark Scala 101"
+name := "Scala / Spark Labs"
 
 version := "0.0.1"
 
