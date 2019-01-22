@@ -26,8 +26,13 @@ scalacOptions ++= Seq(
 )
 
 val catsCoreVersion = "1.5.0"
+val scalaCheckVersion = "1.14.0"
+val scalaCheckShapelessVersion = "0.6.1"
+val scalaTestVersion = "3.0.5"
 
 libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats-core" % "1.5.0",
-  "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
+  "org.typelevel" %% "cats-core" % catsCoreVersion,
+  "org.scalacheck" %% "scalacheck" % scalaCheckVersion % Test,
+  "org.typelevel" %% "shapeless-scalacheck" % scalaCheckShapelessVersion % Test,
+  "org.scalatest" %% "scalatest" % scalaTestVersion % Test
 )
