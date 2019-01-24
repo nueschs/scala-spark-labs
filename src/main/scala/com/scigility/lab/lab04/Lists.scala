@@ -1,4 +1,4 @@
-package com.scigility.lab.lab05
+package com.scigility.lab.lab04
 
 object Lists {
 
