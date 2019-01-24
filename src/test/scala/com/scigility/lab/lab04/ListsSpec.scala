@@ -1,6 +1,6 @@
-package com.scigility.lab.lab05
+package com.scigility.lab.lab04
 
-import com.scigility.lab.lab05.Lists._
+import com.scigility.lab.lab04.Lists._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{FunSuite, Matchers}
