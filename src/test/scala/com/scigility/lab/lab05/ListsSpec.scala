@@ -4,10 +4,14 @@ import com.scigility.lab.lab05.Lists._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{FunSuite, Matchers}
+import org.scalacheck.Arbitrary.arbitrary
 
-object ListsSpec extends FunSuite with GeneratorDrivenPropertyChecks with Matchers {
+class ListsSpec extends FunSuite with GeneratorDrivenPropertyChecks with Matchers {
 
   implicit val peopleGen: Arbitrary[Person] = Arbitrary(Gen.resultOf(Person))
+
+  val namesGen = Gen.listOfN(10, arbitrary[String])
+  val agesGen = Gen.listOfN(10, arbitrary[Int])
 
   test("lower") {
     forAll { l: List[String] =>
@@ -33,16 +37,25 @@ object ListsSpec extends FunSuite with GeneratorDrivenPropertyChecks with Matche
     }
   }
 
-  test("old people") {
-    forAll { (people: List[Person], minAge: Int) =>
-      oldPeople(people, minAge).forall(_.age >= minAge)
-    }
-  }
-
   test("first names") {
     forAll { people: List[Person] =>
       firstNames(people) == people.map(_.firstName)
     }
   }
 
+  test("old people") {
+    forAll { (people: List[Person], minAge: Int) =>
+      oldPeople(people, minAge).forall(_.age >= minAge)
+    }
+  }
+
+  test("construct list of people") {
+    forAll(namesGen, namesGen, agesGen) {(fns: List[String], lns: List[String], as: List[Int]) => {
+      val expected = (fns zip lns zip as) map {
+        case ((firstName, lastName), age) => Person(firstName, lastName, age)
+      }
+
+      constructPeopleList(fns, lns, as) == expected
+    }}
+  }
 }
