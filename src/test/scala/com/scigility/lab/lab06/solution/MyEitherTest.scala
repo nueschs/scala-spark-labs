@@ -26,18 +26,13 @@ class MyEitherTest extends FunSuite with GeneratorDrivenPropertyChecks {
     }
   }
 
-  def myEitherToEither[A, B](e: MyEither[A, B]): Either[A, B] = e match {
-    case MyLeft(l) => Left(l)
-    case MyRight(r) => Right(r)
-  }
-
   def eitherToMyEither[A, B](e: Either[A, B]): MyEither[A, B] = e match {
     case Left(a) => MyLeft[A,B](a)
     case Right(b) => MyRight[A, B](b)
   }
 
   /**
-    * From Scala version  2.12
+    * Adapted from Scala version 2.12
     */
   def eitherMap[A, B1, B2](e: Either[A, B1])(f: B1 => B2): Either[A, B2] = e match {
     case Right(b) => Right(f(b))
@@ -45,7 +40,7 @@ class MyEitherTest extends FunSuite with GeneratorDrivenPropertyChecks {
   }
 
   /**
-    * From Scala version  2.12
+    * Adapted from Scala version 2.12
     */
   def eitherFlatMap[A, B1, B2](e: Either[A, B1])(f: B1 => Either[A, B2]): Either[A, B2] = e match {
     case Right(b) => f(b)
