@@ -4,8 +4,9 @@ package com.scigility.lab.lab06.little.help
  * You can start your implementation from the minimal structure given here
  * if you're stuck, you can get some help in package some.help
  *
- * Optional: Once your done, look at MyOptionTest and try adapt it so that it tests your solution
- * (i.e. change package and type names accordingly, and see if it runs)
+ * Optional: Once your done, look at MyOptionTest, copy it to package com.scigility.lab.lab06.little.help in
+ * src/test/scala, and try adapt it so that it tests your solution (i.e. change package and type names accordingly,
+ * and see if it runs)
  */
 sealed trait MyOption[A]
 // think about how to model the different forms an option come in

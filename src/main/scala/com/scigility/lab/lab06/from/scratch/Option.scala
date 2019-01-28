@@ -6,6 +6,7 @@ package com.scigility.lab.lab06.from.scratch
  *
  * Hint: Be careful about name clashes with Scala's standard library types
  *
- * Optional: Once your done, look at MyOptionTest and try adapt it so that it tests your solution
- * (i.e. change package and type names accordingly, and see if it runs)
+ * Optional: Once your done, look at MyOptionTest, copy it to package com.scigility.lab.lab06.from.scratch in
+ * src/test/scala, and try adapt it so that it tests your solution (i.e. change package and type names accordingly,
+ * and see if it runs)
  */
