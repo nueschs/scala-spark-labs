@@ -1,12 +1,12 @@
 package com.scigility.lab.lab04
 
 import com.scigility.lab.lab04.Lists._
-import org.scalacheck.{Arbitrary, Gen}
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.{FunSuite, Matchers}
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.{Arbitrary, Gen}
+import org.scalatest.FunSuite
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
-class ListsSpec extends FunSuite with GeneratorDrivenPropertyChecks with Matchers {
+class ListsSpec extends FunSuite with GeneratorDrivenPropertyChecks {
 
   implicit val peopleGen: Arbitrary[Person] = Arbitrary(Gen.resultOf(Person))
 
