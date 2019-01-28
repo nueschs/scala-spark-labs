@@ -7,12 +7,9 @@ final case class MyNone[A]() extends MyOption[A]
 /*
  * Try to implement the handling of each of the different cases.
  *
- * When you are done, you can test your solution by changing the imports in MyOptionTest from
- *    import com.scigility.lab.lab06.solution.MyOption._
- * to
- *    import com.scigility.lab.lab06.silver.plate.MyOption._
- *
- * and then running the test class
+ * When you are done, you can test your solution by copying MyOptionTest into package
+ * com.scigility.lab.lab06.silver.plate under src/test/scala, adapting the import accordingly,
+ * and finally running the test class
  */
 object MyOption{
   def map[A, B](a: MyOption[A])(f: A => B): MyOption[B] = a match {
