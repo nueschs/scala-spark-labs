@@ -19,7 +19,7 @@ import com.typesafe.config.ConfigFactory
 object Main{
 
   
-  final case class SparkApplicationConfig(interval:Long, inputTopic:String, outputTopic:String, brokerList:List[String], groupId:String)
+  final case class SparkApplicationConfig(interval:Long, inputTopic:String, outputTopic:String, brokerList:List[String], groupId:String, driverClassName:String, jdbcURL:String, uname:String, pw:String)
 
 
   def sparkMain(spark:SparkSession, applicationConfig:SparkApplicationConfig):Unit = {
@@ -47,7 +47,7 @@ object Main{
 
           val responseStringify : Response => String = r => r.asJson.noSpaces
           val kafkaSink = MessageSink.kafkaAlgebra(kafkaParams)(responseStringify)
-          val jdbcStateStore = HistoryStore.jdbcMemStore[String, State]
+          val jdbcStateStore = HistoryStore.jdbcHistStore(applicationConfig.driverClassName, applicationConfig.jdbcURL, applicationConfig.uname, applicationConfig.pw)
 
           partition
             .toList
