@@ -2,29 +2,27 @@ package com
 package scigility
 package day3
 
-import cats.Applicative
-import cats.effect.{ ExitCode, IOApp }
-import cats.effect.IO
 import cats.implicits._
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.SparkSession.Builder
-import Program.ApplicationConfig
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
-import org.apache.spark.streaming.kafka010.{CanCommitOffsets, HasOffsetRanges, KafkaUtils}
+import org.apache.spark.streaming.kafka010.KafkaUtils
 import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
 import org.apache.kafka.common.serialization.StringDeserializer
-import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
-import Program.Response
-import Program.State
+import Program._
+import io.circe.syntax._, io.circe.parser.decode
 
-object Main extends IOApp {
+import scala.util.{ Failure, Success, Try }
+import pureconfig.generic.auto._
+import com.typesafe.config.ConfigFactory
+
+object Main{
 
   
   final case class SparkApplicationConfig(interval:Long, inputTopic:String, outputTopic:String, brokerList:List[String], groupId:String)
 
 
-  def sparkMain(spark:SparkSession, applicationConfig:SparkApplicationConfig):IO[Unit] = IO {
+  def sparkMain(spark:SparkSession, applicationConfig:SparkApplicationConfig):Unit = {
 
     val kafkaParams = Map[String, Object](
       "bootstrap.servers" -> applicationConfig.brokerList.mkString(","),
@@ -46,15 +44,34 @@ object Main extends IOApp {
     stream.foreachRDD(
       rdd => rdd.foreachPartition(
         partition => {
+
           val responseStringify : Response => String = r => r.asJson.noSpaces
           val kafkaSink = MessageSink.kafkaAlgebra(kafkaParams)(responseStringify)
           val jdbcStateStore = HistoryStore.jdbcMemStore[String, State]
 
-          (kafkaSink, jdbcStateStore).tupled.use(
-            partition.toList.traverse(Program.processMessage(algs._1, algs._2.accept(applicationConfig.outputTopic)))
-          )
-            .void
-            .unsafeRunSync
+          partition
+            .toList
+            .foreach(
+              msg => {
+                decode[Program.Message](msg.value()).left.map(_.toString).flatMap(
+                  msg => Try {
+                    Program.processMessage(jdbcStateStore, kafkaSink.accept(applicationConfig.outputTopic)) _
+                  } match {
+                    case Success(_) => Right(())
+                    case Failure(err) => {
+                      Left(err.getMessage)
+                    }
+                  }
+                ).fold( 
+                  _ => (), 
+                  err => {
+                    //Log Here
+                  }
+                )
+              }
+                  
+            )
+
           
         }
       )
@@ -64,18 +81,19 @@ object Main extends IOApp {
 
 
 
-  override def run(args: List[String]): IO[ExitCode] = 
-    args.headOption.fold(
-      IO.raiseError[String](new RuntimeException("Must have a String Config as Parameter"))
-    )(
-      IO.pure _ 
-    ).flatMap(
-      confString => 
-      (
-        IO { SparkSession.builder().getOrCreate },
-        ConfigAlgebra[IO].readConfigFromString[SparkApplicationConfig](confString)
-      ).mapN(sparkMain _)
-    )
+  def main(args:Array[String]):Unit = {
+    if (args.length != 1 )
+      throw new RuntimeException("Must have exactly one ARG String")
+    else{
+      val spark = SparkSession.builder().getOrCreate
+      pureconfig.loadConfig[SparkApplicationConfig](ConfigFactory.parseString(args(0))).fold(
+          failures =>  throw new RuntimeException(failures.toString),
+          appConfig => sparkMain(spark, appConfig)
+        )
+      
+    }
+      
+  }
 
-  
+   
 }

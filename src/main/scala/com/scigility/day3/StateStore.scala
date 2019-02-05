@@ -3,28 +3,38 @@ package scigility
 package day3
 
 import cats._
-import cats.data.NonEmptyList
-import cats.effect.{ IO, Resource }
-import cats.implicits._
-import cats.data.State
+import scalikejdbc._
+import Program._
 
-abstract class HistoryStore[F[_]: Monad, K, V: Order] {
+abstract class HistoryStore {
 
-  def getHistory(k:K):F[List[V]]
-  def getMostRecent(k:K):F[Option[V]] = getHistory(k).map(_.sorted(Order[V].toOrdering).headOption)
-  def appendState(k:K, v:V):F[Unit]
-  def withCurrentStateDo[X](k:K)(ifEmpty: => F[X])(vf: V => F[X]):F[X] = getMostRecent(k).flatMap(_.fold(ifEmpty)(vf))
-  def update(k:K)(ifEmpty: => F[V])(vf: V => F[V]):F[Unit] = withCurrentStateDo(k)(ifEmpty)(vf).flatMap(v => appendState(k,v))
-
+  def getHistory(k:String):List[State]
+  def getMostRecent(k:String):Option[State] = getHistory(k).sorted(Order[State].toOrdering).headOption
+  def appendState(k:String, v:State):Unit
+  def withCurrentStateDo[X](k:String)(ifEmpty: => X)(vf: State => X):X = getMostRecent(k).fold(ifEmpty)(vf)
+  def update(k:String)(ifEmpty: => State)(vf: State => State):Unit = appendState(k,withCurrentStateDo(k)(ifEmpty)(vf))
+  def close:Unit
 }
 
 object HistoryStore {
-  type Store[K,V] = Map[K,NonEmptyList[V]]
+  def jdbcHistStore(className:String, url:String, user:String, password:String):HistoryStore = new HistoryStore {
+    Class.forName(className)
+    ConnectionPool.singleton(url, user, password)
 
-  def kvMemStore[K,V: Order]:HistoryStore[State[Store[K,V], ?], K, V] = new HistoryStore[State[Store[K,V], ?], K, V] {
-    def getHistory(k:K):State[Store[K,V], List[V]] = State { s => (s, s.get(k).fold(List.empty[V])(_.toList)) }
-    def appendState(k:K, v:V):State[Store[K,V], Unit] = State { s => ((s + (k -> s.get(k).fold(NonEmptyList.one(v))(hist => v :: hist))), ()) }
+    val s = DBState.syntax("s")
+
+    def getHistory(k:String):List[State] = {
+      sql"select ${s.result.*} from ${DBState.as(s)} where ${s.parcelId} = ${k}".map(DBState(s.resultName)).list.apply().map(DBState.dec)
+    }
+
+
+    def appendState(k:String, v:State):Unit = {
+      val dbs = DBState.enc(v)
+      sql"insert into ${DBState.table} (${s.demarcator}, ${s.parcelId}, ${s.ts}, ${s.a1FN}, ${s.a1LN}, ${s.a1S}, ${s.a1ZIP}) values (${dbs.demarcator}, ${dbs.parcelId}, ${dbs.ts}, ${dbs.a1FN}, ${dbs.a1LN}, ${dbs.a1S}, ${dbs.a1ZIP})"
+        .update.apply()
+    }
+
+
+    
   }
-
-  def jdbcMemStore[K,V: Order]:Resource[IO, HistoryStore[IO, K,V]] = ???
 }

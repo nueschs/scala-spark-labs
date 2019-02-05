@@ -40,7 +40,9 @@ libraryDependencies ++= Seq(
   "org.apache.spark"    %% "spark-streaming"            % sparkVersion % "provided", //LICENCE: Apache License 2.0
   "org.apache.spark"    %% "spark-sql"                  % sparkVersion % "provided", //LICENCE: Apache License 2.0
   "org.apache.spark"    %% "spark-streaming-kafka-0-10" % sparkVersion,
-  "org.typelevel" %% "cats-effect" % "1.2.0"
+  "org.typelevel" %% "cats-effect" % "1.2.0",
+  "com.github.pureconfig" %% "pureconfig" % "0.10.1",
+  "org.scalikejdbc" %% "scalikejdbc"       % "3.3.2"
 )
 
 val circeVersion = "0.10.0"
