@@ -6,14 +6,14 @@ import cats._
 import scalikejdbc._
 import Program._
 
-abstract class HistoryStore {
+trait HistoryStore {
 
   def getHistory(k:String):List[State]
   def getMostRecent(k:String):Option[State] = getHistory(k).sorted(Order[State].toOrdering).headOption
   def appendState(k:String, v:State):Unit
   def withCurrentStateDo[X](k:String)(ifEmpty: => X)(vf: State => X):X = getMostRecent(k).fold(ifEmpty)(vf)
   def update(k:String)(ifEmpty: => State)(vf: State => State):Unit = appendState(k,withCurrentStateDo(k)(ifEmpty)(vf))
-  def close:Unit
+  def close():Unit
 }
 
 object HistoryStore {
@@ -38,7 +38,7 @@ object HistoryStore {
       ()
     }
 
-    def close = {
+    def close():Unit = {
       db.close()
       connection.close()
     }

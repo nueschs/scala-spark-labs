@@ -10,3 +10,6 @@ package com.scigility.lab.lab06.from.scratch
  * src/test/scala, and try adapt it so that it tests your solution (i.e. change package and type names accordingly,
  * and see if it runs)
  */
+
+object Lab06Option{
+}

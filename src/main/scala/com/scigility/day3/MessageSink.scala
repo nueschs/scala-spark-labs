@@ -8,7 +8,7 @@ import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 
 trait MessageSink[V]{
   def accept(topic:String)(v:V):Unit
-  def close:Unit
+  def close():Unit
 }
 
 object MessageSink{
@@ -22,7 +22,7 @@ object MessageSink{
       ()
     }
 
-    def close:Unit = producer.close()
+    def close():Unit = producer.close()
   }
   
 }

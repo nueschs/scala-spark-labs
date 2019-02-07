@@ -72,6 +72,9 @@ object Main{
                   
             )
 
+          kafkaSink.close()
+          jdbcStateStore.close()
+
           
         }
       )

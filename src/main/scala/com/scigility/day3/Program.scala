@@ -20,7 +20,9 @@ object Program {
   final case class Delivery(msgKey:String, parcelId:String, ts:Long, accepted:Boolean) extends Message
   final case class DestinationChange(msgKey:String, parcelId:String, ts:Long, newRecipient: Address) extends Message
 
-  sealed trait Response
+  sealed trait Response{
+    def msgKey:String
+  }
   final case class MessageFailure(msgKey:String, reason:String) extends Response
   final case class MessageSuccess(msgKey:String) extends Response
   
@@ -32,6 +34,10 @@ object Program {
   final case class InDelivery(parcelId:String, ts:Long, distributionCenter:Address, intendedRecipientAddress:Address) extends State
   final case class Delivered(parcelId:String, ts:Long, recipient:Address) extends State
 
+
+  implicit val encM:Encoder[Message] = deriveEncoder[Message]
+  implicit val encA:Encoder[Address] = deriveEncoder[Address]
+  implicit val decR:Decoder[Response] = deriveDecoder[Response]
   implicit val enc:Encoder[Response] = deriveEncoder[Response]
   implicit val decA:Decoder[Address] = deriveDecoder[Address]
   implicit val dec:Decoder[Message] = deriveDecoder[Message]
