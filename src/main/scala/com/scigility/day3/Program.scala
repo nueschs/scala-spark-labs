@@ -8,7 +8,7 @@ import scalikejdbc._
 
 object Program {
 
-
+  //This is a whole bunch of data definitions and declarations
   sealed trait Message{
     def msgKey:String
     def parcelId:String
@@ -33,22 +33,25 @@ object Program {
   final case class InDelivery(parcelId:String, ts:Long, distributionCenter:String, intendedRecipientAddress:String) extends State
   final case class Delivered(parcelId:String, ts:Long, recipient:String) extends State
 
-
+  //This is dependent on what library you chose to handle the json messages. I personally chose circe and have to declare the decoders/encoders to be used 
   implicit val encM:Encoder[Message] = deriveEncoder[Message]
   implicit val decR:Decoder[Response] = deriveDecoder[Response]
   implicit val enc:Encoder[Response] = deriveEncoder[Response]
   implicit val dec:Decoder[Message] = deriveDecoder[Message]
 
+  //I also declare how State should be ordered (we need to be able to find the newest)
   implicit val order:Order[State] = Order.from[State]((a,a1) => a.ts.compare(a1.ts))
 
+  //This is how I flatten our different states into the DB (RDBMS don't have a native representation of sum-types)
   final case class DBState(
-    demarcator:String,
+    demarcator:String, //this field tells us which kind of state it was
     parcelId:String,
     ts:Long,
     aOne:Option[String],
     aTwo:Option[String]
   )
 
+  //All the SQL-ish stuff is from the library I chose to work with
   object DBState  extends SQLSyntaxSupport[DBState] {
     override val tableName = "states"
 
@@ -75,23 +78,28 @@ object Program {
     }
   }
 
-
+  //Here we process a single message. Remember the specification in terms of the state diagram that we had. this is really just a mapping from (current state, incoming message) => (new state, response)
   def processMessage(
     historyStore:HistoryStore, 
     sink:Response => Unit
   )(
     msg:Message
   ):Unit = 
+    //we need to write a response anyway so we call the sink (from outside we plug "writing to kafka" into that)
     sink(
+      //now we need to find out what kind of response we need to generate. withCurrentStateDo needs a key with which to identify the parcel in the store as well as 2 functions. 1 that tells it what to do if there is NO current state and one if there is
       historyStore.withCurrentStateDo[Response](msg.parcelId)(
         msg match {
+          //there's only one valid case if there's no current state. the message has to be a New message. if so we generate the appropriate new state and result in a success response
           case NewParcel(key, pid, ts, sender, recipient) => {
             historyStore.appendState(pid, New(pid, ts, sender, recipient)) 
             MessageSuccess(key)
           }
+          //In ALL other cases we fail because the message does not represent a valid state transformation
           case m:Message => MessageFailure(m.msgKey, s"No previous State was found and message was $m")
         }
       )(
+        //if we do have a current state we need to match on both the current state and the incoming message. You'll see all of the arrows from the state diagram represented here
         state => (state,msg) match {
           case (s:New, m:DistributionHop) => {
             historyStore.appendState(s.parcelId, InDelivery(s.parcelId, m.ts, m.distributionCenter, s.recipient))
