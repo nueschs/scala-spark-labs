@@ -8,17 +8,16 @@ import scalikejdbc._
 
 object Program {
 
-  final case class Address(firstName:String, lastName:String, street:String, zipCode:Int)
 
   sealed trait Message{
     def msgKey:String
     def parcelId:String
     def ts:Long
   }
-  final case class NewParcel(msgKey:String, parcelId:String, ts:Long, sender:Address, recipient:Address) extends Message
-  final case class DistributionHop(msgKey:String, parcelId:String, ts:Long, distributionCenter:Address) extends Message
+  final case class NewParcel(msgKey:String, parcelId:String, ts:Long, sender:String, recipient:String) extends Message
+  final case class DistributionHop(msgKey:String, parcelId:String, ts:Long, distributionCenter:String) extends Message
   final case class Delivery(msgKey:String, parcelId:String, ts:Long, accepted:Boolean) extends Message
-  final case class DestinationChange(msgKey:String, parcelId:String, ts:Long, newRecipient: Address) extends Message
+  final case class DestinationChange(msgKey:String, parcelId:String, ts:Long, newRecipient: String) extends Message
 
   sealed trait Response{
     def msgKey:String
@@ -30,16 +29,14 @@ object Program {
   sealed trait State{
     def ts:Long
   }
-  final case class New(parcelId:String, ts:Long, sender:Address, recipient:Address) extends State
-  final case class InDelivery(parcelId:String, ts:Long, distributionCenter:Address, intendedRecipientAddress:Address) extends State
-  final case class Delivered(parcelId:String, ts:Long, recipient:Address) extends State
+  final case class New(parcelId:String, ts:Long, sender:String, recipient:String) extends State
+  final case class InDelivery(parcelId:String, ts:Long, distributionCenter:String, intendedRecipientAddress:String) extends State
+  final case class Delivered(parcelId:String, ts:Long, recipient:String) extends State
 
 
   implicit val encM:Encoder[Message] = deriveEncoder[Message]
-  implicit val encA:Encoder[Address] = deriveEncoder[Address]
   implicit val decR:Decoder[Response] = deriveDecoder[Response]
   implicit val enc:Encoder[Response] = deriveEncoder[Response]
-  implicit val decA:Decoder[Address] = deriveDecoder[Address]
   implicit val dec:Decoder[Message] = deriveDecoder[Message]
 
   implicit val order:Order[State] = Order.from[State]((a,a1) => a.ts.compare(a1.ts))
@@ -48,14 +45,8 @@ object Program {
     demarcator:String,
     parcelId:String,
     ts:Long,
-    a1FN:Option[String],
-    a1LN:Option[String],
-    a1S:Option[String],
-    a1ZIP:Option[Int],
-    a2FN:Option[String],
-    a2LN:Option[String],
-    a2S:Option[String],
-    a2ZIP:Option[Int]
+    aOne:Option[String],
+    aTwo:Option[String]
   )
 
   object DBState  extends SQLSyntaxSupport[DBState] {
@@ -67,18 +58,21 @@ object Program {
         rs.string(g.demarcator), 
         rs.string(g.parcelId),
         rs.long(g.ts),
-        rs.stringOpt(g.a1FN),
-        rs.stringOpt(g.a1LN),
-        rs.stringOpt(g.a1S),
-        rs.intOpt(g.a1ZIP),
-        rs.stringOpt(g.a2FN),
-        rs.stringOpt(g.a2LN),
-        rs.stringOpt(g.a2S),
-        rs.intOpt(g.a2ZIP)
+        rs.stringOpt(g.aOne),
+        rs.stringOpt(g.aTwo)
       )
 
-    def enc(s:State):DBState = ???
-    def dec(dbState:DBState):State = ??? 
+    def enc(s:State):DBState = s match {
+      case New(parcelId, ts, sender, recipient) => DBState("new", parcelId, ts, Some(sender), Some(recipient))
+      case InDelivery(parcelId, ts, distributionCenter, intendedRecipientAddress) => DBState("indelivery", parcelId, ts, Some(distributionCenter), Some(intendedRecipientAddress))
+      case Delivered(parcelId,ts,recipient) => DBState("delivered", parcelId, ts, Some(recipient), None)
+    }
+    def dec(dbState:DBState):State = dbState match {
+      case DBState("new", parcelId, ts, Some(a1), Some(a2)) => New(parcelId, ts, a1, a2)
+      case DBState("indelivery", parcelId, ts, Some(a1), Some(a2)) => InDelivery(parcelId,ts,a1,a2)
+      case DBState("delivered", parcelId, ts, Some(a1), None) => Delivered(parcelId,ts,a1)
+      case errState:DBState => throw new RuntimeException(s"Invalid DBState: $errState") 
+    }
   }
 
 

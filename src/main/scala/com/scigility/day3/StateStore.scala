@@ -32,7 +32,7 @@ object HistoryStore {
     def appendState(k:String, v:State):Unit = {
       db.localTx { implicit session =>
         val dbs = DBState.enc(v)
-        sql"insert into ${DBState.table} (${s.demarcator}, ${s.parcelId}, ${s.ts}, ${s.a1FN}, ${s.a1LN}, ${s.a1S}, ${s.a1ZIP}) values (${dbs.demarcator}, ${dbs.parcelId}, ${dbs.ts}, ${dbs.a1FN}, ${dbs.a1LN}, ${dbs.a1S}, ${dbs.a1ZIP})"
+        sql"insert into ${DBState.table} (${s.demarcator}, ${s.parcelId}, ${s.ts}, ${s.aOne}, ${s.aTwo}) values (${dbs.demarcator}, ${dbs.parcelId}, ${dbs.ts}, ${s.aOne}, ${s.aTwo})"
         .update.apply()
       }
       ()

@@ -1,3 +1,6 @@
+import sbtassembly.AssemblyPlugin.autoImport.ShadeRule
+import sbtassembly.MergeStrategy
+
 name := "Scala / Spark Labs"
 
 version := "0.0.1"
@@ -52,3 +55,33 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic",
   "io.circe" %% "circe-parser"
 ).map(_ % circeVersion)
+
+
+assemblyShadeRules in assembly := Seq(
+  ShadeRule.rename("org.apache.avro.**" -> "org.apache.avro_shaded.@1").inAll,
+  ShadeRule.rename("shapeless.**" -> "shapeless_shaded.@1").inAll//,
+ // ShadeRule.rename("cats.effect.**" -> "cats.effect_shaded.@1").inAll //can be removed once http4s can be bumped to version 19 which relies on FS2 1.0.0 and cats-effect 1.0.0
+)
+
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case PathList(xs @ _*) if xs.last.endsWith(".html") => MergeStrategy.discard
+  case PathList(xs @ _*) if xs.last.endsWith("library.properties") => MergeStrategy.last
+  case "application.conf"            => MergeStrategy.concat
+  case "reference.conf"              => MergeStrategy.concat
+  case PathList("org", "apache", xs @ _*) => MergeStrategy.last
+  case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last
+  case PathList("javax", "activation", xs @ _*) => MergeStrategy.last
+  case PathList("javax", "inject", xs @ _*) => MergeStrategy.last
+  case PathList("org", "aopalliance", xs @ _*) => MergeStrategy.last
+  case PathList("com", "google", xs @ _*) => MergeStrategy.last
+  case PathList("com", "esotericsoftware", xs @ _*) => MergeStrategy.last
+  case PathList("com", "codahale", xs @ _*) => MergeStrategy.last
+  case PathList("scalaz", xs @ _*) => MergeStrategy.last
+  case PathList("com", "yammer", xs @ _*) => MergeStrategy.last
+  case PathList("net", "jpountz", xs @ _*) => MergeStrategy.last
+  case PathList("scala", xs @ _*) => MergeStrategy.last
+  case x =>
+    val baseStrategy = (assemblyMergeStrategy in assembly).value
+    baseStrategy(x)
+}
