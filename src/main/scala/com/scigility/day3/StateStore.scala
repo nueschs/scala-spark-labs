@@ -22,7 +22,7 @@ trait HistoryStore {
 }
 
 object HistoryStore {
-  //this is the actual implementation. This is really just given by what choice of SQL Library you persue 
+  //this is the actual implementation. This is really just given by what  SQL Library you chose
   def jdbcHistStore(className:String, url:String, user:String, password:String):HistoryStore = new HistoryStore {
     Class.forName(className)
     ConnectionPool.singleton(url, user, password)

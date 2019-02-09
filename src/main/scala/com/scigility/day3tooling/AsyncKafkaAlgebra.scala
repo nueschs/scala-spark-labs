@@ -7,7 +7,6 @@ import cats.implicits._
 import cats.effect.{ Effect, Resource }
 import io.circe.{ Decoder, Encoder }
 import io.circe.parser.decode
-import java.time.Duration
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import scala.collection.JavaConverters._
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
@@ -72,7 +71,7 @@ object AsyncKafkaAlgebra{
       }
 
       def await[K:Eq, R: Decoder](topic:String, timeout:Long)(k:K, keyBy:R=>K):F[Option[R]] = Effect[F].delay {
-        val records = consumer.poll(Duration.ofMillis(timeout))
+        val records = consumer.poll(timeout)
         records
           .asScala
           .map(_.value())

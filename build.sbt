@@ -1,12 +1,12 @@
 import sbtassembly.AssemblyPlugin.autoImport.ShadeRule
 import sbtassembly.MergeStrategy
 
-name := "Scala / Spark Labs"
+name := "scala_spark_labs"
 
 version := "0.0.1"
 
-scalaVersion := "2.11.12"
-ensimeScalaVersion in ThisBuild := "2.11.12"
+scalaVersion := "2.11.8"
+ensimeScalaVersion in ThisBuild := "2.11.8"
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8")
 organization := "com.scigility"
 
@@ -25,15 +25,16 @@ scalacOptions ++= Seq(
   "-Ywarn-numeric-widen",   
   "-Ywarn-value-discard",
   "-Xfuture",
-  "-Ywarn-unused-import",
-  "-Ypartial-unification"
+  "-Ywarn-unused-import"
 )
 
 val catsCoreVersion = "1.5.0"
 val scalaCheckVersion = "1.14.0"
 val scalaCheckShapelessVersion = "1.2.0-1"
 val scalaTestVersion = "3.0.5"
-val sparkVersion = "2.4.0"
+val sparkVersion = "2.3.1"
+
+lazy val excludeJpountz = ExclusionRule(organization = "net.jpountz.lz4", name = "lz4")
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsCoreVersion,
@@ -42,7 +43,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
   "org.apache.spark"    %% "spark-streaming"            % sparkVersion % "provided", //LICENCE: Apache License 2.0
   "org.apache.spark"    %% "spark-sql"                  % sparkVersion % "provided", //LICENCE: Apache License 2.0
-  "org.apache.spark"    %% "spark-streaming-kafka-0-10" % sparkVersion,
+  "org.apache.spark"    %% "spark-streaming-kafka-0-10" % sparkVersion excludeAll(excludeJpountz),
   "org.typelevel" %% "cats-effect" % "1.2.0",
   "com.github.pureconfig" %% "pureconfig" % "0.10.1",
   "org.scalikejdbc" %% "scalikejdbc"       % "3.3.2"
