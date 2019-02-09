@@ -12,8 +12,12 @@ trait MessageSink[V]{
 }
 
 object MessageSink{
-  def kafkaAlgebra[V](kafkaParamMap:Map[String,Object])(stringify:V => String):MessageSink[V] = new MessageSink[V] {
-    val producer =  new KafkaProducer[String, String](kafkaParamMap.asJava)
+  def kafkaAlgebra[V](brokerList:List[String])(stringify:V => String):MessageSink[V] = new MessageSink[V] {
+    val producer =  new KafkaProducer[String, String](Map[String,Object](
+          "key.serializer" -> "org.apache.kafka.common.serialization.StringSerializer",
+          "value.serializer" -> "org.apache.kafka.common.serialization.StringSerializer",
+          "bootstrap.servers" -> brokerList.mkString(",")
+        ).asJava)
 
     override def accept(topic: String)(v:V): Unit = {
       producer.send(

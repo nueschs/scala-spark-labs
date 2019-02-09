@@ -9,6 +9,7 @@ import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
 import org.apache.spark.streaming.kafka010.KafkaUtils
 import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
 import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.log4j.LogManager
 import Program._
 import io.circe.syntax._, io.circe.parser.decode
 
@@ -23,6 +24,8 @@ object Main{
 
   //This is where we'll jump to, to actually do our spark job
   def sparkMain(spark:SparkSession, applicationConfig:SparkApplicationConfig):Unit = {
+
+    @transient lazy val log = LogManager.getLogger(Main.getClass)
    
     //we set up a map with all our needed kafka parameters that we passed in the config
     val kafkaParams = Map[String, Object](
@@ -46,11 +49,11 @@ object Main{
 
     stream.foreachRDD(
       rdd => rdd.foreachPartition(
-        partition => {
+        partition => Try {
           //again we have non serializable resources that need to be set up per partition so it's all executor local and needs no serialization
           val responseStringify : Response => String = r => r.asJson.noSpaces
           //the kafka sink allows us to write responses to our output topic
-          val kafkaSink = MessageSink.kafkaAlgebra(kafkaParams)(responseStringify)
+          val kafkaSink = MessageSink.kafkaAlgebra(applicationConfig.brokerList)(responseStringify)
           //the jdbc store allows us to retrieve the history, latest state and update the sate of our parcels.
           val jdbcStateStore = HistoryStore.jdbcHistStore(applicationConfig.driverClassName, applicationConfig.jdbcURL, applicationConfig.uname, applicationConfig.pw)
 
@@ -62,33 +65,41 @@ object Main{
             .foreach(
               msg => {
                 //we decode the JSON String in the message and if it is succesfull the content of the flatMap will be executed
-                decode[Program.Message](msg.value()).left.map(_.toString).flatMap(
+                decode[Program.Message](msg.value()) match {
+                  case Left(err) => throw err
+                  case Right(msg) => Program.processMessage(jdbcStateStore, kafkaSink.accept(applicationConfig.outputTopic))(msg)
+                }
+
+                /*decode[Program.Message](msg.value()).flatMap(
                   //Here we'll try to execute our program that works on a single record
                   msg => Try {
-                    Program.processMessage(jdbcStateStore, kafkaSink.accept(applicationConfig.outputTopic)) _
+                    
                   } match {
                     case Success(_) => Right(())
                     case Failure(err) => {
-                      Left(err.getMessage)
+                      Left(err)
                     }
                   }
                 ).fold( 
-                  _ => (), 
-                  err => {
-                    //Log Here
-                  }
-                )
+                 err => log.error(err), 
+                 _ => ()
+                )*/
               }
                   
             )
           //at the end of the partition we clean up our resources
           kafkaSink.close()
           jdbcStateStore.close()
-
-          
+        } match {
+          case Success(_) => ()
+          case Failure(err) =>  throw err//log.error(err)
         }
+        
       )
     )
+
+    ssc.start()
+    ssc.awaitTermination()
 
   }
 
