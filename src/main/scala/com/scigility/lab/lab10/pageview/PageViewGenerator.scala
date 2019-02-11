@@ -61,16 +61,16 @@ object PageViewGenerator {
     new Thread() {
       val prod = new KafkaProducer[String, String](kafkaParams.asJava)
 
-      def delay(initial: Long) = {
-        def bound(initial: Long, factor: Double) = (initial*factor).intValue()
-        val lower = bound(sleepDelayMs, 0.8)
-        val upper = bound(sleepDelayMs, 1.2)
-        lower + Random.nextInt(upper - lower)
+      def delay: Long = {
+        def bound(factor: Double) = (sleepDelayMs*factor).intValue()
+        val lower = bound(0.8)
+        val upper = bound(1.2)
+        lower + Random.nextInt(upper - lower).longValue()
       }
 
       override def run(): Unit = {
         while (running) {
-          Thread.sleep(delay(sleepDelayMs))
+          Thread.sleep(delay)
           val nextEvent = getNextClickEvent()
           prod.send(new ProducerRecord("lab-10", nextEvent.url, nextEvent.toString)).get
           prod.flush()

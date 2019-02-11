@@ -2,7 +2,6 @@ package com
 package scigility
 package day3
 
-import cats.implicits._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
