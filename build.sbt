@@ -6,7 +6,6 @@ name := "scala_spark_labs"
 version := "0.0.1"
 
 scalaVersion := "2.11.8"
-ensimeScalaVersion in ThisBuild := "2.11.8"
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8")
 organization := "com.scigility"
 
